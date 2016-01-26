@@ -38,7 +38,7 @@ class Trajectory
 
   @property 'distanceToStopLine',
     get: ->
-      return @getDistanceToIntersection() if not @canEnterIntersection()
+      return @getDistanceToIntersection()# if not @canEnterIntersection()
       return Infinity
 
   @property 'nextIntersection',

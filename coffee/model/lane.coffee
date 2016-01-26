@@ -3,8 +3,23 @@
 require '../helpers'
 _ = require 'underscore'
 Segment = require '../geom/segment'
+{PI} = Math
+{random} = Math
+$ = require 'jquery'
+require '../helpers'
+_ = require 'underscore'
+Car = require './car'
+Graphics = require './graphics'
+Point = require '../geom/point'
+Intersection = require './intersection'
+Road = require './road'
+Pool = require './pool'
+Rect = require '../geom/rect'
+settings = require '../settings'
 
 class Lane
+  @numCars = 0
+  @cars = null
   constructor: (@sourceSegment, @targetSegment, @road) ->
     @leftAdjacent = null
     @rightAdjacent = null
@@ -12,6 +27,8 @@ class Lane
     @rightmostAdjacent = null
     @carsPositions = {}
     @update()
+    @numCars = 0
+    @cars = new Pool Car, null
 
   toJSON: ->
     obj = _.extend {}, this

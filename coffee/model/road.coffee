@@ -47,8 +47,7 @@ class Road
     @sourceSide = @source.rect.getSide(@sourceSideId).subsegment 0.5, 1.0
     @targetSideId = @target.rect.getSectorId @source.rect.center()
     @targetSide = @target.rect.getSide(@targetSideId).subsegment 0, 0.5
-    @lanesNumber = min(@sourceSide.length, @targetSide.length) | 0
-    @lanesNumber = max 2, @lanesNumber / settings.gridSize | 0
+    @lanesNumber = 1 #just set it to 1
     sourceSplits = @sourceSide.split @lanesNumber, true
     targetSplits = @targetSide.split @lanesNumber
     if not @lanes? or @lanes.length < @lanesNumber

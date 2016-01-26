@@ -6,23 +6,31 @@ _ = require 'underscore'
 Trajectory = require './trajectory'
 
 class Car
+  @lane = null
+  @employed = false
+
   constructor: (lane, position) ->
+    @lane = lane
     @id = _.uniqueId 'car'
     @color = (300 + 240 * random() | 0) % 360
     @_speed = 0
     @width = 1.7
-    @length = 3 + 2 * random()
-    @maxSpeed = 30
+    @length = 2 #all cars equal hehe
+    @maxSpeed = 4000000000
     @s0 = 2
-    @timeHeadway = 1.5
-    @maxAcceleration = 1
-    @maxDeceleration = 3
+    @timeHeadway = 0.2
+    @maxAcceleration = 20
+    @maxDeceleration = 40
     @trajectory = new Trajectory this, lane, position
     @alive = true
+    @employed = false
     @preferedLane = null
 
   @property 'coords',
     get: -> @trajectory.coords
+
+#  @property 'lane',
+#    get: -> @lane
 
   @property 'speed',
     get: -> @_speed

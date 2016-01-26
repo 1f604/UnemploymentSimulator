@@ -22,9 +22,18 @@ class Rect
     @x = left if left?
     @x
 
+  moveleft: (delta) ->
+    @x -= delta
+    @x
+
   right: (right) ->
     @x = right - @width() if right?
     @x + @width()
+
+
+  moveright: ->
+    @x += 1
+    @x
 
   width: (width) ->
     @_width = width if width?
@@ -66,6 +75,9 @@ class Rect
   getSide: (i) ->
     vertices = @getVertices()
     new Segment vertices[i], vertices[(i + 1) % 4]
+
+  getX: ->
+    return @x
 
   getSectorId: (point) ->
     offset = point.subtract @center()

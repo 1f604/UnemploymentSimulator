@@ -37,6 +37,8 @@ class Visualizer
     @previousTime = 0
     @timeFactor = settings.defaultTimeFactor
     @debug = false
+    @counter=0
+    @jobgrowthrate=0.001
 
   drawIntersection: (intersection, alpha) ->
     color = intersection.color or settings.colors.intersection
@@ -46,6 +48,7 @@ class Visualizer
     @graphics.fillRect intersection.rect, color, alpha
 
   drawSignals: (road) ->
+    @counter-=@jobgrowthrate
     lightsColors = [settings.colors.redLight, settings.colors.greenLight]
     intersection = road.target
     segment = road.targetSide
@@ -57,27 +60,12 @@ class Visualizer
     @ctx.rotate (sideId + 1) * PI / 2
     @ctx.scale 1 * segment.length, 1 * segment.length
     # map lane ending to [(0, -0.5), (0, 0.5)]
-    if lights[0]
-      @graphics.drawTriangle(
-        new Point(0.1, -0.2),
-        new Point(0.2, -0.4),
-        new Point(0.3, -0.2)
-      )
-      @graphics.fill settings.colors.greenLight
-    if lights[1]
-      @graphics.drawTriangle(
-        new Point(0.3, -0.1),
-        new Point(0.5, 0),
-        new Point(0.3, 0.1)
-      )
-      @graphics.fill settings.colors.greenLight
-    if lights[2]
-      @graphics.drawTriangle(
-        new Point(0.1, 0.2),
-        new Point(0.2, 0.4),
-        new Point(0.3, 0.2)
-      )
-      @graphics.fill settings.colors.greenLight
+    @graphics.drawTriangle(
+        new Point(0+@counter, 0.8),
+        new Point(0.2+@counter, 0.5),
+        new Point(0.4+@counter, 0.8)
+    )
+    @graphics.fill settings.colors.greenLight
     @ctx.restore()
     if @debug
       @ctx.save()
