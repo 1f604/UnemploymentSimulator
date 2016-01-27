@@ -16,6 +16,8 @@ settings = require '../settings'
 
 class World
   constructor: ->
+    @proportionality = 0.0358 #the proportionality constant is slightly too large but I can't be bothered to get it exactly right
+    @constant2 = 0.57 #this is also slightly too large but I also can't be bothered to fix it 
     @constant = 300
     @set {}
     @poplimit = 10
@@ -24,7 +26,10 @@ class World
     @ctx = @canvas.getContext('2d')
     @graphics = new Graphics @ctx
     @birthrate = 50
+    @suiciderate = 10
+    @lifeExpectancy = 70
     @counter = @constant//@birthrate-1 #this is a hack. 
+    @suicidecounter = 29 #another hack
 
   drawSignals: (road) ->
     lightsColors = [settings.colors.redLight, settings.colors.greenLight]
@@ -80,14 +85,31 @@ class World
       road.target = @getIntersection road.target
       @addRoad road
 
+  showjobs: ->
+    prevpos = 0
+    for id,car of @cars.all()
+      pos = (car.trajectory.absolutePosition*@proportionality + @constant2)*6.9832+0.005 #magic numbers for the win
+      diff = pos - prevpos
+      prevpos = pos
+      plim = @poplimit*6.9987
+      pdiff = plim-pos
+      jobs = window.jobs*-1.751 -0.35
+#      console.log("diff: "+diff) 
+#      console.log("poplimit: "+plim)
+      console.log("pop-diff: "+pdiff)
+      console.log("jobs: "+(window.jobs*-1.751 -0.35))
+
+      #alert(" jobs: "+(window.jobs*-1.751 -0.35))
+    null
 
   generateMap: (minX = -2, maxX = 2, minY = -2, maxY = 2) ->
     @clear()
     map = {}
     gridSize = settings.gridSize
-    step = 5 * gridSize
+    step = gridSize
     @carsNumber = 100
     maxX=@poplimit
+    window.poplimit = @poplimit
     x=0
     y=0
 
@@ -117,7 +139,7 @@ class World
     throw Error 'delta > 1' if delta > 1
     @time += delta
     @refreshCars()
-    @drawSignals road for id, road of @roads.all()
+   # @drawSignals road for id, road of @roads.all()
     for id, intersection of @intersections.all()
       intersection.controlSignals.onTick delta
     for id, car of @cars.all() #move the cars
@@ -126,6 +148,7 @@ class World
 
   refreshCars: ->
     @addCars()
+    @checkCars()
     @removeCars()
 
   addRoad: (road) ->
@@ -158,18 +181,43 @@ class World
       @counter = 0
       for id,road of @roads.all()
         lane = _.sample road.lanes
-        if lane.numCars < 60
+        if lane.numCars < @poplimit * 7 -5
           lane.numCars += 1
-          car = new Car lane
+
+          car = new Car(lane,false)
+          if lane.numCars < -window.jobs
+            car = new Car(lane,true)
           lane.cars.put car 
           @addCar car
     return false
 
+  checkCars: ->
+    
+    for id,car of @cars.all()
+      pos = (car.trajectory.absolutePosition*@proportionality + @constant2)*6.9832+0.005
+      diff = pos - prevpos
+      prevpos = pos
+      plim = @poplimit*6.9987
+      pdiff = plim-pos
+      jobs = window.jobs*-1.751 -0.35
+#      console.log("diff: "+diff) 
+#      console.log("poplimit: "+plim)
+      if pdiff+0.5 < jobs
+        car.setEmployed()
+      else
+        car.setUnemployed()
+
   removeCars: ->
-        car = _.sample @cars.all()
-        if car.employed == true
-          car.lane.numCars -= 1
-          #lane.cars.pop car
-          @removeCar car
+    @suicidecounter++
+    if @suicidecounter >= 30
+      @suicidecounter = 0
+      for id,car of @cars.all()
+        if car.employed == false
+          rnum = _.random 1, 100
+          if rnum <= @suiciderate #kill yourself
+            car.lane.numCars -= 1
+            #lane.cars.pop car
+            #car.setUnemployed()
+            @removeCar car
 
 module.exports = World

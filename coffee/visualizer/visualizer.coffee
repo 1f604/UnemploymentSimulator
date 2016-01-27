@@ -49,6 +49,13 @@ class Visualizer
 
   drawSignals: (road) ->
     @counter-=@jobgrowthrate
+    if @counter > 0 #imposes a limit on the leftmost position on the employment pointer
+      @counter = 0
+    if @counter < -window.poplimit
+      @counter = -window.poplimit
+
+    console.log(@counter)
+    window.jobs = @counter
     lightsColors = [settings.colors.redLight, settings.colors.greenLight]
     intersection = road.target
     segment = road.targetSide

@@ -33,21 +33,16 @@ $(function() {
   gui = new DAT.GUI();
   guiWorld = gui.addFolder('world');
   guiWorld.open();
-  guiWorld.add(world, 'save');
-  guiWorld.add(world, 'load');
-  guiWorld.add(world, 'clear');
   guiWorld.add(world, 'generateMap');
+  guiWorld.add(world, 'showjobs');
   guiVisualizer = gui.addFolder('visualizer');
   guiVisualizer.open();
   guiVisualizer.add(visualizer, 'running').listen();
   guiVisualizer.add(visualizer, 'debug').listen();
-  guiVisualizer.add(visualizer.zoomer, 'scale', 0.1, 2).listen();
   guiVisualizer.add(visualizer, 'jobgrowthrate').min(-0.02).max(0.01).step(0.0001).listen();
-  guiWorld.add(world, 'carsNumber').min(0).max(200).step(1).listen();
-  guiWorld.add(world, 'poplimit').min(1).max(50).step(1).listen();
   guiWorld.add(world, 'birthrate').min(1).max(100).step(1).listen();
-  guiWorld.add(world, 'time').min(0).max(200).step(1).listen();
-  return guiWorld.add(world, 'suiciderate').min(0).max(100).step(1).listen();
+  guiWorld.add(world, 'suiciderate').min(0).max(100).step(1).listen();
+  return guiWorld.add(world, 'lifeExpectancy').min(1).max(140).step(1).listen();
 });
 
 
@@ -419,8 +414,13 @@ Car = (function() {
 
   Car.employed = false;
 
-  function Car(lane, position) {
+  Car.trajectory = null;
+
+  Car.age = 20;
+
+  function Car(lane, employed, position) {
     this.lane = lane;
+    this.age = 20;
     this.id = _.uniqueId('car');
     this.color = (300 + 240 * random() | 0) % 360;
     this._speed = 0;
@@ -430,10 +430,14 @@ Car = (function() {
     this.s0 = 2;
     this.timeHeadway = 0.2;
     this.maxAcceleration = 20;
-    this.maxDeceleration = 40;
+    this.maxDeceleration = 30;
     this.trajectory = new Trajectory(this, lane, position);
     this.alive = true;
-    this.employed = false;
+    if (employed) {
+      this.setEmployed();
+    } else {
+      this.setUnemployed();
+    }
     this.preferedLane = null;
   }
 
@@ -463,6 +467,16 @@ Car = (function() {
       return this.trajectory.direction;
     }
   });
+
+  Car.prototype.setEmployed = function() {
+    this.color = 125;
+    return this.employed = true;
+  };
+
+  Car.prototype.setUnemployed = function() {
+    this.color = 0;
+    return this.employed = false;
+  };
 
   Car.prototype.release = function() {
     return this.trajectory.release();
@@ -1597,6 +1611,8 @@ settings = require('../settings');
 World = (function() {
   function World() {
     this.onTick = __bind(this.onTick, this);
+    this.proportionality = 0.0358;
+    this.constant2 = 0.57;
     this.constant = 300;
     this.set({});
     this.poplimit = 10;
@@ -1605,7 +1621,10 @@ World = (function() {
     this.ctx = this.canvas.getContext('2d');
     this.graphics = new Graphics(this.ctx);
     this.birthrate = 50;
+    this.suiciderate = 10;
+    this.lifeExpectancy = 70;
     this.counter = Math.floor(this.constant / this.birthrate) - 1;
+    this.suicidecounter = 29;
   }
 
   World.prototype.drawSignals = function(road) {
@@ -1683,6 +1702,24 @@ World = (function() {
     return _results;
   };
 
+  World.prototype.showjobs = function() {
+    var car, diff, id, jobs, pdiff, plim, pos, prevpos, _ref;
+    prevpos = 0;
+    _ref = this.cars.all();
+    for (id in _ref) {
+      car = _ref[id];
+      pos = (car.trajectory.absolutePosition * this.proportionality + this.constant2) * 6.9832 + 0.005;
+      diff = pos - prevpos;
+      prevpos = pos;
+      plim = this.poplimit * 6.9987;
+      pdiff = plim - pos;
+      jobs = window.jobs * -1.751 - 0.35;
+      console.log("pop-diff: " + pdiff);
+      console.log("jobs: " + (window.jobs * -1.751 - 0.35));
+    }
+    return null;
+  };
+
   World.prototype.generateMap = function(minX, maxX, minY, maxY) {
     var gridSize, intersection, map, previous, rect, step, x, y, _i, _j, _ref;
     if (minX == null) {
@@ -1700,9 +1737,10 @@ World = (function() {
     this.clear();
     map = {};
     gridSize = settings.gridSize;
-    step = 5 * gridSize;
+    step = gridSize;
     this.carsNumber = 100;
     maxX = this.poplimit;
+    window.poplimit = this.poplimit;
     x = 0;
     y = 0;
     this.counter = Math.floor(this.constant / this.birthrate) - 1;
@@ -1735,26 +1773,21 @@ World = (function() {
   };
 
   World.prototype.onTick = function(delta) {
-    var car, id, intersection, road, _ref, _ref1, _ref2, _results;
+    var car, id, intersection, _ref, _ref1, _results;
     if (delta > 1) {
       throw Error('delta > 1');
     }
     this.time += delta;
     this.refreshCars();
-    _ref = this.roads.all();
+    _ref = this.intersections.all();
     for (id in _ref) {
-      road = _ref[id];
-      this.drawSignals(road);
-    }
-    _ref1 = this.intersections.all();
-    for (id in _ref1) {
-      intersection = _ref1[id];
+      intersection = _ref[id];
       intersection.controlSignals.onTick(delta);
     }
-    _ref2 = this.cars.all();
+    _ref1 = this.cars.all();
     _results = [];
-    for (id in _ref2) {
-      car = _ref2[id];
+    for (id in _ref1) {
+      car = _ref1[id];
       car.move(delta);
       if (!car.alive) {
         _results.push(this.removeCar(car));
@@ -1767,6 +1800,7 @@ World = (function() {
 
   World.prototype.refreshCars = function() {
     this.addCars();
+    this.checkCars();
     return this.removeCars();
   };
 
@@ -1810,9 +1844,12 @@ World = (function() {
       for (id in _ref) {
         road = _ref[id];
         lane = _.sample(road.lanes);
-        if (lane.numCars < 60) {
+        if (lane.numCars < this.poplimit * 7 - 5) {
           lane.numCars += 1;
-          car = new Car(lane);
+          car = new Car(lane, false);
+          if (lane.numCars < -window.jobs) {
+            car = new Car(lane, true);
+          }
           lane.cars.put(car);
           this.addCar(car);
         }
@@ -1821,12 +1858,49 @@ World = (function() {
     return false;
   };
 
+  World.prototype.checkCars = function() {
+    var car, diff, id, jobs, pdiff, plim, pos, prevpos, _ref, _results;
+    _ref = this.cars.all();
+    _results = [];
+    for (id in _ref) {
+      car = _ref[id];
+      pos = (car.trajectory.absolutePosition * this.proportionality + this.constant2) * 6.9832 + 0.005;
+      diff = pos - prevpos;
+      prevpos = pos;
+      plim = this.poplimit * 6.9987;
+      pdiff = plim - pos;
+      jobs = window.jobs * -1.751 - 0.35;
+      if (pdiff + 0.5 < jobs) {
+        _results.push(car.setEmployed());
+      } else {
+        _results.push(car.setUnemployed());
+      }
+    }
+    return _results;
+  };
+
   World.prototype.removeCars = function() {
-    var car;
-    car = _.sample(this.cars.all());
-    if (car.employed === true) {
-      car.lane.numCars -= 1;
-      return this.removeCar(car);
+    var car, id, rnum, _ref, _results;
+    this.suicidecounter++;
+    if (this.suicidecounter >= 30) {
+      this.suicidecounter = 0;
+      _ref = this.cars.all();
+      _results = [];
+      for (id in _ref) {
+        car = _ref[id];
+        if (car.employed === false) {
+          rnum = _.random(1, 100);
+          if (rnum <= this.suiciderate) {
+            car.lane.numCars -= 1;
+            _results.push(this.removeCar(car));
+          } else {
+            _results.push(void 0);
+          }
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
     }
   };
 
@@ -2465,6 +2539,14 @@ Visualizer = (function() {
   Visualizer.prototype.drawSignals = function(road) {
     var center, flipInterval, intersection, lights, lightsColors, phaseOffset, segment, sideId;
     this.counter -= this.jobgrowthrate;
+    if (this.counter > 0) {
+      this.counter = 0;
+    }
+    if (this.counter < -window.poplimit) {
+      this.counter = -window.poplimit;
+    }
+    console.log(this.counter);
+    window.jobs = this.counter;
     lightsColors = [settings.colors.redLight, settings.colors.greenLight];
     intersection = road.target;
     segment = road.targetSide;

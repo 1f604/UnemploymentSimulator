@@ -8,9 +8,12 @@ Trajectory = require './trajectory'
 class Car
   @lane = null
   @employed = false
+  @trajectory = null
+  @age = 20
 
-  constructor: (lane, position) ->
+  constructor: (lane, employed, position) ->
     @lane = lane
+    @age = 20
     @id = _.uniqueId 'car'
     @color = (300 + 240 * random() | 0) % 360
     @_speed = 0
@@ -20,10 +23,13 @@ class Car
     @s0 = 2
     @timeHeadway = 0.2
     @maxAcceleration = 20
-    @maxDeceleration = 40
+    @maxDeceleration = 30
     @trajectory = new Trajectory this, lane, position
     @alive = true
-    @employed = false
+    if employed
+      @setEmployed()
+    else
+      @setUnemployed()
     @preferedLane = null
 
   @property 'coords',
@@ -41,6 +47,15 @@ class Car
 
   @property 'direction',
     get: -> @trajectory.direction
+
+  setEmployed: ->
+    @color = 125
+    @employed = true
+
+  setUnemployed: ->
+    @color = 0
+    @employed = false
+
 
   release: ->
     @trajectory.release()
