@@ -8,12 +8,15 @@ Trajectory = require './trajectory'
 class Car
   @lane = null
   @employed = false
+  @immunity = false
   @trajectory = null
   @age = 20
+  @queueposition = 0
 
   constructor: (lane, employed, position) ->
     @lane = lane
     @age = 20
+    @queueposition = 0
     @id = _.uniqueId 'car'
     @color = (300 + 240 * random() | 0) % 360
     @_speed = 0
@@ -28,6 +31,7 @@ class Car
     @alive = true
     if employed
       @setEmployed()
+      @immunity = true
     else
       @setUnemployed()
     @preferedLane = null

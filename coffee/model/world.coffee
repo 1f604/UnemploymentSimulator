@@ -21,6 +21,7 @@ class World
     @constant = 300
     @set {}
     @poplimit = 10
+    @populationLimit = 12
     @$canvas = $('#canvas')
     @canvas = @$canvas[0]
     @ctx = @canvas.getContext('2d')
@@ -29,7 +30,8 @@ class World
     @suiciderate = 10
     @lifeExpectancy = 70
     @counter = @constant//@birthrate-1 #this is a hack. 
-    @suicidecounter = 29 #another hack
+    @suiciderefreshrate = 30
+    @suicidecounter = @suiciderefreshrate-1 
 
   drawSignals: (road) ->
     lightsColors = [settings.colors.redLight, settings.colors.greenLight]
@@ -75,17 +77,8 @@ class World
     data = data or localStorage.world
     data = data and JSON.parse data
     return unless data?
-    @clear()
-    @carsNumber = data.carsNumber or 0
-    for id, intersection of data.intersections
-      @addIntersection Intersection.copy intersection
-    for id, road of data.roads
-      road = Road.copy road
-      road.source = @getIntersection road.source
-      road.target = @getIntersection road.target
-      @addRoad road
 
-  showjobs: ->
+  displayInfo: ->
     prevpos = 0
     for id,car of @cars.all()
       pos = (car.trajectory.absolutePosition*@proportionality + @constant2)*6.9832+0.005 #magic numbers for the win
@@ -96,18 +89,27 @@ class World
       jobs = window.jobs*-1.751 -0.35
 #      console.log("diff: "+diff) 
 #      console.log("poplimit: "+plim)
-      console.log("pop-diff: "+pdiff)
-      console.log("jobs: "+(window.jobs*-1.751 -0.35))
+      console.log("I am "+car.age+" years old!")
+      if car.employed
+        console.log("I am employed!")
+      else
+        console.log("I am unemployed!")
+        if car.immunity 
+          console.log("I am expecting employment!")
+#      console.log("pop-diff: "+pdiff)
+    console.log("jobs: "+(window.jobs*-1.751 -0.35))
 
       #alert(" jobs: "+(window.jobs*-1.751 -0.35))
     null
 
-  generateMap: (minX = -2, maxX = 2, minY = -2, maxY = 2) ->
+  generateMap: (minX = -2, maxX = 2, minY = -2, maxY = 1) -> #let's have one lane for now
     @clear()
     map = {}
     gridSize = settings.gridSize
     step = gridSize
     @carsNumber = 100
+
+    @poplimit = @populationLimit
     maxX=@poplimit
     window.poplimit = @poplimit
     x=0
@@ -185,15 +187,19 @@ class World
           lane.numCars += 1
 
           car = new Car(lane,false)
-          if lane.numCars < -window.jobs
+          if lane.numCars < (window.jobs*-1.751 -0.35)
             car = new Car(lane,true)
           lane.cars.put car 
           @addCar car
     return false
 
   checkCars: ->
-    
+    counter = 0 
+    employedcounter  = 0
+    totalcounter = 0
     for id,car of @cars.all()
+      car.queueposition = counter
+      counter++
       pos = (car.trajectory.absolutePosition*@proportionality + @constant2)*6.9832+0.005
       diff = pos - prevpos
       prevpos = pos
@@ -202,17 +208,37 @@ class World
       jobs = window.jobs*-1.751 -0.35
 #      console.log("diff: "+diff) 
 #      console.log("poplimit: "+plim)
-      if pdiff+0.5 < jobs
+      if car.queueposition < jobs-1 #if there are jobs available for you, don't lose hope :^)
+        car.immunity = true
+      else
+        car.immunity = false 
+      if pdiff+0.5 < jobs 
         car.setEmployed()
       else
         car.setUnemployed()
+      if car.employed == true
+        employedcounter++
+      totalcounter++
+      unemploymentrate = (Math.round(((totalcounter-employedcounter)/totalcounter)*10000)/100).toFixed(2)
+      if unemploymentrate < 40
+        $('#textbox').css('color', "#bbff99")
+      else
+        $('#textbox').css('color', "#ff3333")
+      $('#textbox').text("Unemployment rate: "+unemploymentrate+"%")
+#    document.write("Employed: "+employedcounter+" Total: "+totalcounter)
+
 
   removeCars: ->
     @suicidecounter++
-    if @suicidecounter >= 30
+    if @suicidecounter >= @suiciderefreshrate
       @suicidecounter = 0
+      #console.log("Time for another round of suicide watch!")
       for id,car of @cars.all()
-        if car.employed == false
+        car.age += 1
+        if car.age > @lifeExpectancy #you have outlived your usefulness
+            car.lane.numCars -= 1
+            @removeCar car
+        else if car.employed == false and car.immunity == false #only consider suicide if you've lost hope :^)
           rnum = _.random 1, 100
           if rnum <= @suiciderate #kill yourself
             car.lane.numCars -= 1

@@ -21,7 +21,7 @@ class Visualizer
     @$canvas = $('#canvas')
     @canvas = @$canvas[0]
     @ctx = @canvas.getContext('2d')
-
+    @jobLimit = 10
     @carImage = new Image()
     @carImage.src = 'images/car.png'
 
@@ -51,10 +51,11 @@ class Visualizer
     @counter-=@jobgrowthrate
     if @counter > 0 #imposes a limit on the leftmost position on the employment pointer
       @counter = 0
-    if @counter < -window.poplimit
-      @counter = -window.poplimit
+    jobcap = -window.poplimit * @jobLimit / 45
+    if @counter < jobcap
+      @counter = jobcap
 
-    console.log(@counter)
+    #console.log(@counter)
     window.jobs = @counter
     lightsColors = [settings.colors.redLight, settings.colors.greenLight]
     intersection = road.target

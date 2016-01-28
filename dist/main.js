@@ -17,11 +17,22 @@ World = require('./model/world');
 settings = require('./settings');
 
 $(function() {
-  var canvas, gui, guiVisualizer, guiWorld;
+  var canvas, gui, guiVisualizer, guiWorld, textbox;
   canvas = $('<canvas />', {
     id: 'canvas'
   });
   $(document.body).append(canvas);
+  textbox = $('<div />', {
+    id: 'textbox'
+  });
+  $(document.body).append(textbox);
+  $('#textbox').css('left', "50%");
+  $('#textbox').css('font-family', "Futura");
+  $('#textbox').css('transform', "translateX(-50%)");
+  $('#textbox').css('top', "10px");
+  $('#textbox').css('position', "absolute");
+  $('#textbox').css('color', "#bbff99");
+  $('#textbox').text("Unemployment rate: 100%");
   window.world = new World();
   world.load();
   if (world.intersections.length === 0) {
@@ -34,15 +45,16 @@ $(function() {
   guiWorld = gui.addFolder('world');
   guiWorld.open();
   guiWorld.add(world, 'generateMap');
-  guiWorld.add(world, 'showjobs');
+  guiWorld.add(world, 'displayInfo');
   guiVisualizer = gui.addFolder('visualizer');
   guiVisualizer.open();
   guiVisualizer.add(visualizer, 'running').listen();
-  guiVisualizer.add(visualizer, 'debug').listen();
   guiVisualizer.add(visualizer, 'jobgrowthrate').min(-0.02).max(0.01).step(0.0001).listen();
+  guiVisualizer.add(visualizer, 'jobLimit').min(0).max(100).step(0.0001).listen();
+  guiWorld.add(world, 'populationLimit').min(1).max(50).step(1).listen();
   guiWorld.add(world, 'birthrate').min(1).max(100).step(1).listen();
   guiWorld.add(world, 'suiciderate').min(0).max(100).step(1).listen();
-  return guiWorld.add(world, 'lifeExpectancy').min(1).max(140).step(1).listen();
+  return guiWorld.add(world, 'lifeExpectancy').min(22).max(140).step(1).listen();
 });
 
 
@@ -414,13 +426,18 @@ Car = (function() {
 
   Car.employed = false;
 
+  Car.immunity = false;
+
   Car.trajectory = null;
 
   Car.age = 20;
 
+  Car.queueposition = 0;
+
   function Car(lane, employed, position) {
     this.lane = lane;
     this.age = 20;
+    this.queueposition = 0;
     this.id = _.uniqueId('car');
     this.color = (300 + 240 * random() | 0) % 360;
     this._speed = 0;
@@ -435,6 +452,7 @@ Car = (function() {
     this.alive = true;
     if (employed) {
       this.setEmployed();
+      this.immunity = true;
     } else {
       this.setUnemployed();
     }
@@ -1616,6 +1634,7 @@ World = (function() {
     this.constant = 300;
     this.set({});
     this.poplimit = 10;
+    this.populationLimit = 12;
     this.$canvas = $('#canvas');
     this.canvas = this.$canvas[0];
     this.ctx = this.canvas.getContext('2d');
@@ -1624,7 +1643,8 @@ World = (function() {
     this.suiciderate = 10;
     this.lifeExpectancy = 70;
     this.counter = Math.floor(this.constant / this.birthrate) - 1;
-    this.suicidecounter = 29;
+    this.suiciderefreshrate = 30;
+    this.suicidecounter = this.suiciderefreshrate - 1;
   }
 
   World.prototype.drawSignals = function(road) {
@@ -1677,32 +1697,14 @@ World = (function() {
   };
 
   World.prototype.load = function(data) {
-    var id, intersection, road, _ref, _ref1, _results;
     data = data || localStorage.world;
     data = data && JSON.parse(data);
     if (data == null) {
-      return;
+
     }
-    this.clear();
-    this.carsNumber = data.carsNumber || 0;
-    _ref = data.intersections;
-    for (id in _ref) {
-      intersection = _ref[id];
-      this.addIntersection(Intersection.copy(intersection));
-    }
-    _ref1 = data.roads;
-    _results = [];
-    for (id in _ref1) {
-      road = _ref1[id];
-      road = Road.copy(road);
-      road.source = this.getIntersection(road.source);
-      road.target = this.getIntersection(road.target);
-      _results.push(this.addRoad(road));
-    }
-    return _results;
   };
 
-  World.prototype.showjobs = function() {
+  World.prototype.displayInfo = function() {
     var car, diff, id, jobs, pdiff, plim, pos, prevpos, _ref;
     prevpos = 0;
     _ref = this.cars.all();
@@ -1714,9 +1716,17 @@ World = (function() {
       plim = this.poplimit * 6.9987;
       pdiff = plim - pos;
       jobs = window.jobs * -1.751 - 0.35;
-      console.log("pop-diff: " + pdiff);
-      console.log("jobs: " + (window.jobs * -1.751 - 0.35));
+      console.log("I am " + car.age + " years old!");
+      if (car.employed) {
+        console.log("I am employed!");
+      } else {
+        console.log("I am unemployed!");
+        if (car.immunity) {
+          console.log("I am expecting employment!");
+        }
+      }
     }
+    console.log("jobs: " + (window.jobs * -1.751 - 0.35));
     return null;
   };
 
@@ -1732,13 +1742,14 @@ World = (function() {
       minY = -2;
     }
     if (maxY == null) {
-      maxY = 2;
+      maxY = 1;
     }
     this.clear();
     map = {};
     gridSize = settings.gridSize;
     step = gridSize;
     this.carsNumber = 100;
+    this.poplimit = this.populationLimit;
     maxX = this.poplimit;
     window.poplimit = this.poplimit;
     x = 0;
@@ -1847,7 +1858,7 @@ World = (function() {
         if (lane.numCars < this.poplimit * 7 - 5) {
           lane.numCars += 1;
           car = new Car(lane, false);
-          if (lane.numCars < -window.jobs) {
+          if (lane.numCars < (window.jobs * -1.751 - 0.35)) {
             car = new Car(lane, true);
           }
           lane.cars.put(car);
@@ -1859,22 +1870,43 @@ World = (function() {
   };
 
   World.prototype.checkCars = function() {
-    var car, diff, id, jobs, pdiff, plim, pos, prevpos, _ref, _results;
+    var car, counter, diff, employedcounter, id, jobs, pdiff, plim, pos, prevpos, totalcounter, unemploymentrate, _ref, _results;
+    counter = 0;
+    employedcounter = 0;
+    totalcounter = 0;
     _ref = this.cars.all();
     _results = [];
     for (id in _ref) {
       car = _ref[id];
+      car.queueposition = counter;
+      counter++;
       pos = (car.trajectory.absolutePosition * this.proportionality + this.constant2) * 6.9832 + 0.005;
       diff = pos - prevpos;
       prevpos = pos;
       plim = this.poplimit * 6.9987;
       pdiff = plim - pos;
       jobs = window.jobs * -1.751 - 0.35;
-      if (pdiff + 0.5 < jobs) {
-        _results.push(car.setEmployed());
+      if (car.queueposition < jobs - 1) {
+        car.immunity = true;
       } else {
-        _results.push(car.setUnemployed());
+        car.immunity = false;
       }
+      if (pdiff + 0.5 < jobs) {
+        car.setEmployed();
+      } else {
+        car.setUnemployed();
+      }
+      if (car.employed === true) {
+        employedcounter++;
+      }
+      totalcounter++;
+      unemploymentrate = (Math.round(((totalcounter - employedcounter) / totalcounter) * 10000) / 100).toFixed(2);
+      if (unemploymentrate < 50) {
+        $('#textbox').css('color', "#bbff99");
+      } else {
+        $('#textbox').css('color', "#ff3333");
+      }
+      _results.push($('#textbox').text("Unemployment rate: " + unemploymentrate + "%"));
     }
     return _results;
   };
@@ -1882,13 +1914,17 @@ World = (function() {
   World.prototype.removeCars = function() {
     var car, id, rnum, _ref, _results;
     this.suicidecounter++;
-    if (this.suicidecounter >= 30) {
+    if (this.suicidecounter >= this.suiciderefreshrate) {
       this.suicidecounter = 0;
       _ref = this.cars.all();
       _results = [];
       for (id in _ref) {
         car = _ref[id];
-        if (car.employed === false) {
+        car.age += 1;
+        if (car.age > this.lifeExpectancy) {
+          car.lane.numCars -= 1;
+          _results.push(this.removeCar(car));
+        } else if (car.employed === false && car.immunity === false) {
           rnum = _.random(1, 100);
           if (rnum <= this.suiciderate) {
             car.lane.numCars -= 1;
@@ -2509,6 +2545,7 @@ Visualizer = (function() {
     this.$canvas = $('#canvas');
     this.canvas = this.$canvas[0];
     this.ctx = this.canvas.getContext('2d');
+    this.jobLimit = 10;
     this.carImage = new Image();
     this.carImage.src = 'images/car.png';
     this.updateCanvasSize();
@@ -2537,15 +2574,15 @@ Visualizer = (function() {
   };
 
   Visualizer.prototype.drawSignals = function(road) {
-    var center, flipInterval, intersection, lights, lightsColors, phaseOffset, segment, sideId;
+    var center, flipInterval, intersection, jobcap, lights, lightsColors, phaseOffset, segment, sideId;
     this.counter -= this.jobgrowthrate;
     if (this.counter > 0) {
       this.counter = 0;
     }
-    if (this.counter < -window.poplimit) {
-      this.counter = -window.poplimit;
+    jobcap = -window.poplimit * this.jobLimit / 45;
+    if (this.counter < jobcap) {
+      this.counter = jobcap;
     }
-    console.log(this.counter);
     window.jobs = this.counter;
     lightsColors = [settings.colors.redLight, settings.colors.greenLight];
     intersection = road.target;
