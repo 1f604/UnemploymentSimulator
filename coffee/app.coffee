@@ -28,7 +28,6 @@ $ ->
   $('#copyrightnotice').css('transform', "translateX(-50%)")
   $('#copyrightnotice').css('bottom', "10px")
   $('#copyrightnotice').css('position', "absolute")
-  $('#copyrightnotice').css('color', "#bbff99")
   $('#copyrightnotice').html('<a href="https://github.com/volkhin/RoadTrafficSimulator">This program is a modification of Road Traffic Simulator, click here to view original (Copyright (C) 2014 Artem Volkhin)</a>')
 
 
