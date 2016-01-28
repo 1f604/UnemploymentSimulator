@@ -20,6 +20,19 @@ $ ->
   $('#textbox').css('position', "absolute")
   $('#textbox').css('color', "#bbff99")
   $('#textbox').text("Unemployment rate: 100%")
+  copyrightnotice = $('<div />', {id: 'copyrightnotice'})
+  $(document.body).append(copyrightnotice)
+  $('#copyrightnotice').css('left', "50%")
+  $('#copyrightnotice').css('font-family', "Futura")
+  $('#copyrightnotice').css('font-size', "10px")
+  $('#copyrightnotice').css('transform', "translateX(-50%)")
+  $('#copyrightnotice').css('bottom', "10px")
+  $('#copyrightnotice').css('position', "absolute")
+  $('#copyrightnotice').css('color', "#bbff99")
+  $('#copyrightnotice').html('<a href="https://github.com/volkhin/RoadTrafficSimulator">This program is a modification of Road Traffic Simulator, click here to view original (Copyright (C) 2014 Artem Volkhin)</a>')
+
+
+#<div style="position: absolute; bottom: 0; left: 0; border: 0;"  alt="Original Source" ></div>
 
 
   window.world = new World()

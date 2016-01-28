@@ -17,7 +17,7 @@ World = require('./model/world');
 settings = require('./settings');
 
 $(function() {
-  var canvas, gui, guiVisualizer, guiWorld, textbox;
+  var canvas, copyrightnotice, gui, guiVisualizer, guiWorld, textbox;
   canvas = $('<canvas />', {
     id: 'canvas'
   });
@@ -33,6 +33,18 @@ $(function() {
   $('#textbox').css('position', "absolute");
   $('#textbox').css('color', "#bbff99");
   $('#textbox').text("Unemployment rate: 100%");
+  copyrightnotice = $('<div />', {
+    id: 'copyrightnotice'
+  });
+  $(document.body).append(copyrightnotice);
+  $('#copyrightnotice').css('left', "50%");
+  $('#copyrightnotice').css('font-family', "Futura");
+  $('#copyrightnotice').css('font-size', "10px");
+  $('#copyrightnotice').css('transform', "translateX(-50%)");
+  $('#copyrightnotice').css('bottom', "10px");
+  $('#copyrightnotice').css('position', "absolute");
+  $('#copyrightnotice').css('color', "#bbff99");
+  $('#copyrightnotice').html('<a href="https://github.com/volkhin/RoadTrafficSimulator">This program is a modification of Road Traffic Simulator, click here to view original (Copyright (C) 2014 Artem Volkhin)</a>');
   window.world = new World();
   world.load();
   if (world.intersections.length === 0) {
@@ -1901,7 +1913,7 @@ World = (function() {
       }
       totalcounter++;
       unemploymentrate = (Math.round(((totalcounter - employedcounter) / totalcounter) * 10000) / 100).toFixed(2);
-      if (unemploymentrate < 50) {
+      if (unemploymentrate < 40) {
         $('#textbox').css('color', "#bbff99");
       } else {
         $('#textbox').css('color', "#ff3333");
