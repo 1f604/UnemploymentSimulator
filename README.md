@@ -22,7 +22,7 @@ Also I didn't bother changing the tests so a lot of it is probably not
 applicable to this project. 
 
 ## Demo
-#insert URL of demo here
+https://1f604.github.io/UnemploymentSimulator/
 
 * Mouse and wheel - scrolling and zoom
 * For a change in the poplimit to take effect you must press generateMap. 
