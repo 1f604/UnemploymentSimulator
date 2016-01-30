@@ -1913,7 +1913,7 @@ World = (function() {
       totalcounter++;
     }
     unemploymentrate = (Math.round(((totalcounter - employedcounter) / totalcounter) * 10000) / 100).toFixed(2);
-    if (jobs > employedcounter) {
+    if (jobs > totalcounter) {
       unfilled = jobs - employedcounter;
       unfilledrate = (Math.round((unfilled / jobs) * 10000) / 100).toFixed(2);
       $('#textbox').css('color', "#bbff99");

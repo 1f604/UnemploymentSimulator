@@ -221,7 +221,7 @@ class World
         employedcounter++
       totalcounter++
     unemploymentrate = (Math.round(((totalcounter-employedcounter)/totalcounter)*10000)/100).toFixed(2)
-    if jobs > employedcounter #if there are more jobs than people
+    if jobs > totalcounter #if there are more jobs than people
       unfilled = jobs - employedcounter
       unfilledrate = (Math.round(((unfilled)/jobs)*10000)/100).toFixed(2)
       $('#textbox').css('color', "#bbff99")
