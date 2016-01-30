@@ -1881,12 +1881,12 @@ World = (function() {
   };
 
   World.prototype.checkCars = function() {
-    var car, counter, diff, employedcounter, id, jobs, pdiff, plim, pos, prevpos, totalcounter, unemploymentrate, _ref, _results;
+    var car, counter, diff, employedcounter, id, jobs, pdiff, plim, pos, prevpos, totalcounter, unemploymentrate, unfilled, unfilledrate, _ref;
     counter = 0;
     employedcounter = 0;
     totalcounter = 0;
+    unfilled = 0;
     _ref = this.cars.all();
-    _results = [];
     for (id in _ref) {
       car = _ref[id];
       car.queueposition = counter;
@@ -1911,15 +1911,21 @@ World = (function() {
         employedcounter++;
       }
       totalcounter++;
-      unemploymentrate = (Math.round(((totalcounter - employedcounter) / totalcounter) * 10000) / 100).toFixed(2);
+    }
+    unemploymentrate = (Math.round(((totalcounter - employedcounter) / totalcounter) * 10000) / 100).toFixed(2);
+    if (jobs > employedcounter) {
+      unfilled = jobs - employedcounter;
+      unfilledrate = (Math.round((unfilled / jobs) * 10000) / 100).toFixed(2);
+      $('#textbox').css('color', "#bbff99");
+      return $('#textbox').text("Percentage of positions unfilled: " + unfilledrate + "%");
+    } else {
       if (unemploymentrate < 40) {
         $('#textbox').css('color', "#bbff99");
       } else {
         $('#textbox').css('color', "#ff3333");
       }
-      _results.push($('#textbox').text("Unemployment rate: " + unemploymentrate + "%"));
+      return $('#textbox').text("Unemployment rate: " + unemploymentrate + "%");
     }
-    return _results;
   };
 
   World.prototype.removeCars = function() {
