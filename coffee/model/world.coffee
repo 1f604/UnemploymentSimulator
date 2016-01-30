@@ -197,6 +197,7 @@ class World
     counter = 0 
     employedcounter  = 0
     totalcounter = 0
+    unfilled = 0 #no. unfilled positions
     for id,car of @cars.all()
       car.queueposition = counter
       counter++
@@ -219,7 +220,14 @@ class World
       if car.employed == true
         employedcounter++
       totalcounter++
-      unemploymentrate = (Math.round(((totalcounter-employedcounter)/totalcounter)*10000)/100).toFixed(2)
+    unemploymentrate = (Math.round(((totalcounter-employedcounter)/totalcounter)*10000)/100).toFixed(2)
+    if jobs > employedcounter #if there are more jobs than people
+      unfilled = jobs - employedcounter
+      unfilledrate = (Math.round(((unfilled)/jobs)*10000)/100).toFixed(2)
+      $('#textbox').css('color', "#bbff99")
+      $('#textbox').text("Percentage of positions unfilled: "+unfilledrate+"%")
+
+    else 
       if unemploymentrate < 40
         $('#textbox').css('color', "#bbff99")
       else
