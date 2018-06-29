@@ -2578,7 +2578,7 @@ Visualizer = (function() {
     this.timeFactor = settings.defaultTimeFactor;
     this.debug = false;
     this.counter = 0;
-    this.jobgrowthrate = 0.001;
+    this.jobgrowthrate = 0.01;
   }
 
   Visualizer.prototype.drawIntersection = function(intersection, alpha) {
